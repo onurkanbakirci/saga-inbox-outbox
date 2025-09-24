@@ -1,3 +1,4 @@
+using MassTransit;
 using MassTransit.EntityFrameworkCoreIntegration;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,6 +13,16 @@ public class OrderDatabaseContext(DbContextOptions options) : SagaDbContext(opti
         {
             yield return new OrderStateMapper();
         }
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Add MassTransit inbox/outbox tables
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
     }
 }
 

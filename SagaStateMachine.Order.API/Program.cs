@@ -21,9 +21,20 @@ builder.Services.AddMassTransit(masstransitConfiguration =>
             configuration.UsePostgres();
         });
 
+    // Configure outbox
+    masstransitConfiguration.AddEntityFrameworkOutbox<OrderDatabaseContext>(o =>
+    {
+        o.UsePostgres();
+        o.UseBusOutbox();
+    });
+
     masstransitConfiguration.UsingRabbitMq((context, config) =>
     {
         config.Host(builder.Configuration.GetConnectionString("RabbitMQ"));
+        
+        // Configure message retry
+        config.UseMessageRetry(r => r.Intervals(100, 200, 500, 800, 1000));
+        
         config.ConfigureEndpoints(context);
     });
 });
