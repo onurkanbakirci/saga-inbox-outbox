@@ -12,25 +12,31 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDbContext<PaymentDatabaseContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
-builder.Services.AddMassTransit(x =>
+builder.Services.AddMassTransit(masstransitConfiguration =>
 {
-    x.AddConsumer<ProcessPaymentEventHandler>();
+    masstransitConfiguration.AddConsumer<ProcessPaymentEventHandler>();
 
     // Configure outbox for reliable message publishing
-    x.AddEntityFrameworkOutbox<PaymentDatabaseContext>(o =>
+    masstransitConfiguration.AddEntityFrameworkOutbox<PaymentDatabaseContext>(outboxConfiguration =>
     {
-        o.UsePostgres();
-        o.UseBusOutbox();
+        outboxConfiguration.UsePostgres();
+        outboxConfiguration.UseBusOutbox();
     });
 
-    x.UsingRabbitMq((context, cfg) =>
+    // Configure outbox for all endpoints
+    masstransitConfiguration.AddConfigureEndpointsCallback((context, name, cfg) =>
     {
-        cfg.Host(builder.Configuration.GetConnectionString("RabbitMQ"));
+        cfg.UseEntityFrameworkOutbox<PaymentDatabaseContext>(context);
+    });
+
+    masstransitConfiguration.UsingRabbitMq((context, config) =>
+    {
+        config.Host(builder.Configuration.GetConnectionString("RabbitMQ"));
         
-        // Configure inbox for idempotent message processing
-        cfg.UseMessageRetry(r => r.Intervals(100, 200, 500, 800, 1000));
+        // Configure message retry
+        config.UseMessageRetry(r => r.Intervals(100, 200, 500, 800, 1000));
         
-        cfg.ConfigureEndpoints(context);
+        config.ConfigureEndpoints(context);
     });
 });
 

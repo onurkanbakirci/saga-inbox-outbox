@@ -12,25 +12,31 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDbContext<InventoryDatabaseContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
-builder.Services.AddMassTransit(x =>
+builder.Services.AddMassTransit(masstransitConfiguration =>
 {
-    x.AddConsumer<ReserveInventoryEventHandler>();
+    masstransitConfiguration.AddConsumer<ReserveInventoryEventHandler>();
 
     // Configure outbox for reliable message publishing
-    x.AddEntityFrameworkOutbox<InventoryDatabaseContext>(o =>
+    masstransitConfiguration.AddEntityFrameworkOutbox<InventoryDatabaseContext>(outboxConfiguration =>
     {
-        o.UsePostgres();
-        o.UseBusOutbox();
+        outboxConfiguration.UsePostgres();
+        outboxConfiguration.UseBusOutbox();
     });
 
-    x.UsingRabbitMq((context, cfg) =>
+    // Configure outbox for all endpoints
+    masstransitConfiguration.AddConfigureEndpointsCallback((context, name, cfg) =>
     {
-        cfg.Host(builder.Configuration.GetConnectionString("RabbitMQ"));
+        cfg.UseEntityFrameworkOutbox<InventoryDatabaseContext>(context);
+    });
+
+    masstransitConfiguration.UsingRabbitMq((context, config) =>
+    {
+        config.Host(builder.Configuration.GetConnectionString("RabbitMQ"));
         
         // Configure message retry
-        cfg.UseMessageRetry(r => r.Intervals(100, 200, 500, 800, 1000));
+        config.UseMessageRetry(r => r.Intervals(100, 200, 500, 800, 1000));
         
-        cfg.ConfigureEndpoints(context);
+        config.ConfigureEndpoints(context);
     });
 });
 

@@ -22,10 +22,16 @@ builder.Services.AddMassTransit(masstransitConfiguration =>
         });
 
     // Configure outbox
-    masstransitConfiguration.AddEntityFrameworkOutbox<OrderDatabaseContext>(o =>
+    masstransitConfiguration.AddEntityFrameworkOutbox<OrderDatabaseContext>(outboxConfiguration =>
     {
-        o.UsePostgres();
-        o.UseBusOutbox();
+        outboxConfiguration.UsePostgres();
+        outboxConfiguration.UseBusOutbox();
+    });
+
+    // Configure outbox for all endpoints
+    masstransitConfiguration.AddConfigureEndpointsCallback((context, name, cfg) =>
+    {
+        cfg.UseEntityFrameworkOutbox<OrderDatabaseContext>(context);
     });
 
     masstransitConfiguration.UsingRabbitMq((context, config) =>
