@@ -214,6 +214,9 @@ namespace SagaStateMachine.Order.API.Infrastructure.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("ProductId")
+                        .HasColumnType("text");
+
                     b.HasKey("CorrelationId");
 
                     b.ToTable("OrderState");

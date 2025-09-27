@@ -20,11 +20,13 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
                     context.Saga.OrderTotal = context.Message.Total;
                     context.Saga.CustomerEmail = context.Message.Email;
                     context.Saga.OrderDate = DateTime.UtcNow;
+                    context.Saga.ProductId = context.Message.ProductId.ToString();
                 })
                 .PublishAsync(context => context.Init<ProcessPayment>(new
                 {
                     OrderId = context.Saga.CorrelationId,
-                    Amount = context.Saga.OrderTotal
+                    Amount = context.Saga.OrderTotal,
+                    ProductId = context.Saga.ProductId
                 }))
                 .TransitionTo(ProcessingPayment)
         );
@@ -33,7 +35,8 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
             When(PaymentProcessed)
                 .PublishAsync(context => context.Init<ReserveInventory>(new
                 {
-                    OrderId = context.Saga.CorrelationId
+                    OrderId = context.Saga.CorrelationId,
+                    ProductId = context.Saga.ProductId
                 }))
                 .TransitionTo(ReservingInventory),
             When(OrderFailed)
@@ -45,7 +48,7 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
             When(InventoryReserved)
                 .PublishAsync(context => context.Init<OrderConfirmed>(new
                 {
-                    OrderId = context.Saga.CorrelationId
+                    OrderId = context.Saga.CorrelationId,
                 }))
                 .TransitionTo(Completed)
                 .Finalize(),

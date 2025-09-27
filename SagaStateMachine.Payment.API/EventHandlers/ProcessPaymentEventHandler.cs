@@ -1,11 +1,11 @@
-using MassTransit;
 using SagaStateMachine.BuildingBlocks.Contracts;
-using SagaStateMachine.Payment.API.Infrastructure;
 
 namespace SagaStateMachine.Payment.API.EventHandlers;
 
+using SagaStateMachine.Payment.API.Infrastructure.Models;
+
 public class ProcessPaymentEventHandler(
-    ILogger<ProcessPaymentEventHandler> logger, 
+    ILogger<ProcessPaymentEventHandler> logger,
     PaymentDatabaseContext dbContext) : IConsumer<ProcessPayment>
 {
     private readonly ILogger<ProcessPaymentEventHandler> _logger = logger;
@@ -13,34 +13,27 @@ public class ProcessPaymentEventHandler(
 
     public async Task Consume(ConsumeContext<ProcessPayment> context)
     {
-        _logger.LogInformation("Processing payment for order: {OrderId}", context.Message.OrderId);
-
-        // Simulate payment processing (business logic would go here)
-        await Task.Delay(1000);
-
-        // 90% success rate
-        if (Random.Shared.Next(100) < 90)
+        try
         {
-            // Publish message using outbox pattern - message will be stored in outbox table
-            // and published reliably by the outbox delivery service
+            var payment = new Payment(context.Message.OrderId, context.Message.Amount);
+
+            _dbContext.Payments.Add(payment);
+
             await context.Publish(new PaymentProcessed
             {
                 OrderId = context.Message.OrderId,
-                PaymentIntentId = $"pi_{Guid.NewGuid():N}"
+                PaymentIntentId = payment.Id.ToString()
             });
-            
-            _logger.LogInformation("Payment processed successfully for order: {OrderId}", context.Message.OrderId);
+
+            await _dbContext.SaveChangesAsync();
         }
-        else
+        catch (Exception ex)
         {
-            // Publish failure message using outbox pattern
             await context.Publish(new OrderFailed
             {
                 OrderId = context.Message.OrderId,
-                Reason = "Payment failed"
+                Reason = ex.Message
             });
-            
-            _logger.LogWarning("Payment failed for order: {OrderId}", context.Message.OrderId);
         }
     }
 }

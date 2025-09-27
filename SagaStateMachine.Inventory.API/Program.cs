@@ -42,6 +42,8 @@ builder.Services.AddMassTransit(masstransitConfiguration =>
 
 var app = builder.Build();
 
+app.Seed();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

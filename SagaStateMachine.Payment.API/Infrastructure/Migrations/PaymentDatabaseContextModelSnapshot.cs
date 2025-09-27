@@ -2,21 +2,18 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using SagaStateMachine.Order.API.Infrastructure;
+using SagaStateMachine.Payment.API.Infrastructure;
 
 #nullable disable
 
-namespace SagaStateMachine.Order.API.Infrastructure.Migrations
+namespace SagaStateMachine.Payment.API.Infrastructure.Migrations
 {
-    [DbContext(typeof(OrderDatabaseContext))]
-    [Migration("20250924194344_OutboxAdded")]
-    partial class OutboxAdded
+    [DbContext(typeof(PaymentDatabaseContext))]
+    partial class PaymentDatabaseContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -193,33 +190,21 @@ namespace SagaStateMachine.Order.API.Infrastructure.Migrations
                     b.ToTable("OutboxState");
                 });
 
-            modelBuilder.Entity("SagaStateMachine.Order.API.Infrastructure.Saga.OrderState", b =>
+            modelBuilder.Entity("SagaStateMachine.Payment.API.Infrastructure.Models.Payment", b =>
                 {
-                    b.Property<Guid>("CorrelationId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("CurrentState")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("CustomerEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<DateTime?>("OrderDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("OrderTotal")
+                    b.Property<decimal>("Amount")
                         .HasColumnType("numeric");
 
-                    b.Property<string>("PaymentIntentId")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
 
-                    b.HasKey("CorrelationId");
+                    b.HasKey("Id");
 
-                    b.ToTable("OrderState");
+                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>

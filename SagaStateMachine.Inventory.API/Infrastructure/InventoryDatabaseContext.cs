@@ -1,10 +1,12 @@
-using MassTransit;
-using Microsoft.EntityFrameworkCore;
+using SagaStateMachine.Inventory.API.Infrastructure.Configuration;
 
 namespace SagaStateMachine.Inventory.API.Infrastructure;
 
+using SagaStateMachine.Inventory.API.Infrastructure.Models;
+
 public class InventoryDatabaseContext(DbContextOptions<InventoryDatabaseContext> options) : DbContext(options)
 {
+    public DbSet<Inventory> Inventories { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -13,5 +15,7 @@ public class InventoryDatabaseContext(DbContextOptions<InventoryDatabaseContext>
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();
+
+        modelBuilder.ApplyConfiguration(new InventoryConfigurations());
     }
 }

@@ -1,10 +1,12 @@
-using MassTransit;
-using Microsoft.EntityFrameworkCore;
+using SagaStateMachine.Payment.API.Infrastructure.Configurations;
 
 namespace SagaStateMachine.Payment.API.Infrastructure;
 
+using SagaStateMachine.Payment.API.Infrastructure.Models;
+
 public class PaymentDatabaseContext(DbContextOptions<PaymentDatabaseContext> options) : DbContext(options)
 {
+    public DbSet<Payment> Payments { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -13,5 +15,7 @@ public class PaymentDatabaseContext(DbContextOptions<PaymentDatabaseContext> opt
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();
+
+        modelBuilder.ApplyConfiguration(new PaymentConfiguration());
     }
 }

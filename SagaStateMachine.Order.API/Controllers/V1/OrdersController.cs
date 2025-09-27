@@ -23,6 +23,7 @@ public class OrdersController(IPublishEndpoint publishEndpoint, OrderDatabaseCon
         {
             OrderId = orderId,
             Total = request.Total,
+            ProductId = request.ProductId,
             Email = request.Email
         });
 

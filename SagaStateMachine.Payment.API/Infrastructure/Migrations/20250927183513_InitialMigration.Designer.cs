@@ -9,10 +9,10 @@ using SagaStateMachine.Payment.API.Infrastructure;
 
 #nullable disable
 
-namespace SagaStateMachine.Payment.API.migrations
+namespace SagaStateMachine.Payment.API.Infrastructure.Migrations
 {
     [DbContext(typeof(PaymentDatabaseContext))]
-    [Migration("20250924194237_InitialMigration")]
+    [Migration("20250927183513_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -191,6 +191,23 @@ namespace SagaStateMachine.Payment.API.migrations
                     b.HasIndex("Created");
 
                     b.ToTable("OutboxState");
+                });
+
+            modelBuilder.Entity("SagaStateMachine.Payment.API.Infrastructure.Models.Payment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>

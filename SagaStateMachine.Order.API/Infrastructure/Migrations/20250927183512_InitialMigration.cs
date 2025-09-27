@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace SagaStateMachine.Payment.API.migrations
+namespace SagaStateMachine.Order.API.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class InitialMigration : Migration
@@ -33,6 +33,23 @@ namespace SagaStateMachine.Payment.API.migrations
                 {
                     table.PrimaryKey("PK_InboxState", x => x.Id);
                     table.UniqueConstraint("AK_InboxState_MessageId_ConsumerId", x => new { x.MessageId, x.ConsumerId });
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OrderState",
+                columns: table => new
+                {
+                    CorrelationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CurrentState = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    OrderTotal = table.Column<decimal>(type: "numeric", nullable: false),
+                    ProductId = table.Column<string>(type: "text", nullable: true),
+                    PaymentIntentId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    OrderDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CustomerEmail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrderState", x => x.CorrelationId);
                 });
 
             migrationBuilder.CreateTable(
@@ -129,6 +146,9 @@ namespace SagaStateMachine.Payment.API.migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "OrderState");
+
             migrationBuilder.DropTable(
                 name: "OutboxMessage");
 
