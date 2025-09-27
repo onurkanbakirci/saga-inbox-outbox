@@ -48,4 +48,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.MapControllers();
+
 app.Run();
