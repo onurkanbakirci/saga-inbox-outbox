@@ -50,9 +50,13 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:1.52
     container_name: jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
     ports:
       - "16686:16686" # Jaeger UI
       - "14250:14250" # gRPC ingest from Collector
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
     networks:
       - saga-network
 
@@ -67,6 +71,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=SagaStateMachineOrderDb;Username=postgres;Password=postgres
       - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672/saga-state-machine
+      - OpenTelemetry__Tracing__OtlpExporter__Endpoint=http://otel-collector:4317
+      - OpenTelemetry__Metrics__OtlpExporter__Endpoint=http://otel-collector:4317
     ports:
       - "5001:8080"
     depends_on:
@@ -86,6 +92,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=SagaStateMachineInventoryDb;Username=postgres;Password=postgres
       - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672/saga-state-machine
+      - OpenTelemetry__Tracing__OtlpExporter__Endpoint=http://otel-collector:4317
+      - OpenTelemetry__Metrics__OtlpExporter__Endpoint=http://otel-collector:4317
     ports:
       - "5002:8080"
     depends_on:
@@ -105,6 +113,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=SagaStateMachinePaymentDb;Username=postgres;Password=postgres
       - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672/saga-state-machine
+      - OpenTelemetry__Tracing__OtlpExporter__Endpoint=http://otel-collector:4317
+      - OpenTelemetry__Metrics__OtlpExporter__Endpoint=http://otel-collector:4317
     ports:
       - "5003:8080"
     depends_on:
@@ -124,6 +134,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=SagaStateMachineNotificationDb;Username=postgres;Password=postgres
       - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672/saga-state-machine
+      - OpenTelemetry__Tracing__OtlpExporter__Endpoint=http://otel-collector:4317
+      - OpenTelemetry__Metrics__OtlpExporter__Endpoint=http://otel-collector:4317
     ports:
       - "5004:8080"
     depends_on:
