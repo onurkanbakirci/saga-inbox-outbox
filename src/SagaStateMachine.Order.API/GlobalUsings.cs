@@ -1,0 +1,11 @@
+global using SagaStateMachine.Order.API.Infrastructure;
+global using Microsoft.EntityFrameworkCore;
+global using MassTransit;
+global using SagaStateMachine.Order.API.Infrastructure.Saga;
+global using OpenTelemetry.Resources;
+global using OpenTelemetry.Trace;
+global using OpenTelemetry.Metrics;
+global using OpenTelemetry.Logs;
+global using MassTransit.Logging;
+global using MassTransit.Monitoring;
+global using SagaStateMachine.Order.API.Extensions;

@@ -1,9 +1,0 @@
-global using MassTransit;
-global using Microsoft.EntityFrameworkCore;
-global using SagaStateMachine.Payment.API.Infrastructure;
-global using OpenTelemetry.Resources;
-global using OpenTelemetry.Trace;
-global using OpenTelemetry.Metrics;
-global using MassTransit.Logging;
-global using MassTransit.Monitoring;
-global using SagaStateMachine.Payment.API.Extensions;
