@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using SagaStateMachine.Order.API.Infrastructure;
+using SagaStateMachine.Notification.API.Infrastructure;
 
 #nullable disable
 
-namespace SagaStateMachine.Order.API.Infrastructure.Migrations
+namespace SagaStateMachine.Notification.API.Infrastructure.Migrations
 {
-    [DbContext(typeof(OrderDatabaseContext))]
-    partial class OrderDatabaseContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(NotificationDatabaseContext))]
+    [Migration("20250928091630_CreatedAtAddedToNotificationsTable")]
+    partial class CreatedAtAddedToNotificationsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -190,75 +193,22 @@ namespace SagaStateMachine.Order.API.Infrastructure.Migrations
                     b.ToTable("OutboxState");
                 });
 
-            modelBuilder.Entity("SagaStateMachine.Order.API.Infrastructure.Models.Order", b =>
+            modelBuilder.Entity("SagaStateMachine.Notification.API.Infrastructure.Models.Notification", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("OrderId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CompletedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("CurrentState")
+                    b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.HasKey("OrderId");
 
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("OrderDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("PaymentIntentId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ProductId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("Total")
-                        .HasColumnType("numeric");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Orders");
-                });
-
-            modelBuilder.Entity("SagaStateMachine.Order.API.Infrastructure.Saga.OrderState", b =>
-                {
-                    b.Property<Guid>("CorrelationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CurrentState")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("CustomerEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<DateTime?>("OrderDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("OrderTotal")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("PaymentIntentId")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("ProductId")
-                        .HasColumnType("text");
-
-                    b.HasKey("CorrelationId");
-
-                    b.ToTable("OrderState");
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>

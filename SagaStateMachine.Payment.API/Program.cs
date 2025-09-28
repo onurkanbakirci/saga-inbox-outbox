@@ -14,7 +14,7 @@ builder.Services.AddDbContext<PaymentDatabaseContext>(options =>
 
 builder.Services.AddMassTransit(masstransitConfiguration =>
 {
-    masstransitConfiguration.AddConsumer<ProcessPaymentEventHandler>();
+    masstransitConfiguration.AddConsumers(typeof(Program).Assembly);
 
     // Configure outbox for reliable message publishing
     masstransitConfiguration.AddEntityFrameworkOutbox<PaymentDatabaseContext>(outboxConfiguration =>

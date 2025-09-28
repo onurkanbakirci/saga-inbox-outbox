@@ -8,6 +8,12 @@ public static class SeedExtension
     {
         using var scope = app.ApplicationServices.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<InventoryDatabaseContext>();
+
+        if (context.Inventories.Any())
+        {
+            return;
+        }
+
         SeedData(context);
     }
 

@@ -9,7 +9,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 // Add Entity Framework
-builder.Services.AddDbContext<InventoryDatabaseContext>(options =>
+builder.Services.AddDbContext<NotificationDatabaseContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
 builder.Services.AddMassTransit(masstransitConfiguration =>
@@ -17,7 +17,7 @@ builder.Services.AddMassTransit(masstransitConfiguration =>
     masstransitConfiguration.AddConsumers(typeof(Program).Assembly);
 
     // Configure outbox for reliable message publishing
-    masstransitConfiguration.AddEntityFrameworkOutbox<InventoryDatabaseContext>(outboxConfiguration =>
+    masstransitConfiguration.AddEntityFrameworkOutbox<NotificationDatabaseContext>(outboxConfiguration =>
     {
         outboxConfiguration.UsePostgres();
         outboxConfiguration.UseBusOutbox();
@@ -26,7 +26,7 @@ builder.Services.AddMassTransit(masstransitConfiguration =>
     // Configure outbox for all endpoints
     masstransitConfiguration.AddConfigureEndpointsCallback((context, name, cfg) =>
     {
-        cfg.UseEntityFrameworkOutbox<InventoryDatabaseContext>(context);
+        cfg.UseEntityFrameworkOutbox<NotificationDatabaseContext>(context);
     });
 
     masstransitConfiguration.UsingRabbitMq((context, config) =>
@@ -41,8 +41,6 @@ builder.Services.AddMassTransit(masstransitConfiguration =>
 });
 
 var app = builder.Build();
-
-app.Seed();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

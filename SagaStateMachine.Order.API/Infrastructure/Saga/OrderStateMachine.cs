@@ -33,6 +33,10 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
 
         During(ProcessingPayment,
             When(PaymentProcessed)
+                .Then(context =>
+                {
+                    context.Saga.PaymentIntentId = context.Message.PaymentIntentId;
+                })
                 .PublishAsync(context => context.Init<ReserveInventory>(new
                 {
                     OrderId = context.Saga.CorrelationId,
@@ -49,6 +53,11 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
                 .PublishAsync(context => context.Init<OrderConfirmed>(new
                 {
                     OrderId = context.Saga.CorrelationId,
+                    ProductId = context.Saga.ProductId,
+                    Email = context.Saga.CustomerEmail,
+                    Total = context.Saga.OrderTotal,
+                    OrderDate = context.Saga.OrderDate,
+                    PaymentIntentId = context.Saga.PaymentIntentId
                 }))
                 .TransitionTo(Completed)
                 .Finalize(),
@@ -65,13 +74,13 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
         SetCompletedWhenFinalized();
     }
 
-    public State ProcessingPayment { get; private set; }
-    public State ReservingInventory { get; private set; }
-    public State Completed { get; private set; }
-    public State Failed { get; private set; }
+    public State ProcessingPayment { get; private set; } = null!;
+    public State ReservingInventory { get; private set; } = null!;
+    public State Completed { get; private set; } = null!;
+    public State Failed { get; private set; } = null!;
 
-    public Event<OrderSubmitted> OrderSubmitted { get; private set; }
-    public Event<PaymentProcessed> PaymentProcessed { get; private set; }
-    public Event<InventoryReserved> InventoryReserved { get; private set; }
-    public Event<OrderFailed> OrderFailed { get; private set; }
+    public Event<OrderSubmitted> OrderSubmitted { get; private set; } = null!;
+    public Event<PaymentProcessed> PaymentProcessed { get; private set; } = null!;
+    public Event<InventoryReserved> InventoryReserved { get; private set; } = null!;
+    public Event<OrderFailed> OrderFailed { get; private set; } = null!;
 }

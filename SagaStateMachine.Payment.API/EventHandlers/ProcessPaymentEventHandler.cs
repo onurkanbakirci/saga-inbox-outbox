@@ -19,21 +19,27 @@ public class ProcessPaymentEventHandler(
 
             _dbContext.Payments.Add(payment);
 
+            // Publish success message - outbox pattern will handle transaction management
             await context.Publish(new PaymentProcessed
             {
                 OrderId = context.Message.OrderId,
                 PaymentIntentId = payment.Id.ToString()
             });
 
+            // Save changes - outbox pattern will ensure this and message publishing happen atomically
             await _dbContext.SaveChangesAsync();
         }
         catch (Exception ex)
         {
+            // Publish failure message - outbox pattern will handle transaction management
             await context.Publish(new OrderFailed
             {
                 OrderId = context.Message.OrderId,
                 Reason = ex.Message
             });
+
+            // Let the exception bubble up so MassTransit can handle retry logic
+            throw;
         }
     }
 }

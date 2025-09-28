@@ -4,9 +4,12 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace SagaStateMachine.Order.API.Infrastructure;
 
+using SagaStateMachine.Order.API.Infrastructure.Configurations;
+using SagaStateMachine.Order.API.Infrastructure.Models;
 
 public class OrderDatabaseContext(DbContextOptions options) : SagaDbContext(options)
 {
+    public DbSet<Order> Orders { get; set; }
     protected override IEnumerable<ISagaClassMap> Configurations
     {
         get
@@ -23,6 +26,8 @@ public class OrderDatabaseContext(DbContextOptions options) : SagaDbContext(opti
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();
+
+        modelBuilder.ApplyConfiguration(new OrderConfigurations());
     }
 }
 

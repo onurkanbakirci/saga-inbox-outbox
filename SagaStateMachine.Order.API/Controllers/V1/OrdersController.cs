@@ -17,19 +17,33 @@ public class OrdersController(IPublishEndpoint publishEndpoint, OrderDatabaseCon
     {
         var orderId = Guid.NewGuid();
 
-        // Publish message using outbox pattern - message will be stored in outbox table
-        // and published reliably after transaction commits
-        await _publishEndpoint.Publish(new OrderSubmitted
+        // Start a database transaction for the outbox pattern
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        try
         {
-            OrderId = orderId,
-            Total = request.Total,
-            ProductId = request.ProductId,
-            Email = request.Email
-        });
+            // Publish message using outbox pattern - message will be stored in outbox table
+            // and published reliably after transaction commits
+            await _publishEndpoint.Publish(new OrderSubmitted
+            {
+                OrderId = orderId,
+                Total = request.Total,
+                ProductId = request.ProductId,
+                Email = request.Email
+            });
 
-        // Commit transaction - this will also trigger outbox message publishing
-        await _dbContext.SaveChangesAsync();
+            // Save changes to persist the outbox message
+            await _dbContext.SaveChangesAsync();
 
-        return Ok(new { OrderId = orderId });
+            // Commit transaction - this will also trigger outbox message publishing
+            await transaction.CommitAsync();
+
+            return Ok(new { OrderId = orderId });
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 }

@@ -1,0 +1,6 @@
+@SagaStateMachine.Notification.API_HostAddress = http://localhost:5231
+
+GET {{SagaStateMachine.Notification.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -21,6 +21,9 @@ builder.Services.AddMassTransit(masstransitConfiguration =>
             configuration.UsePostgres();
         });
 
+    // Add event handlers
+    masstransitConfiguration.AddConsumers(typeof(Program).Assembly);
+
     // Configure outbox
     masstransitConfiguration.AddEntityFrameworkOutbox<OrderDatabaseContext>(outboxConfiguration =>
     {
