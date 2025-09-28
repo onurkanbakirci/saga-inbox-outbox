@@ -1,0 +1,137 @@
+version: "3.9"
+
+networks:
+  saga-network:
+    driver: bridge
+
+services:
+  # ---- Infrastructure Services ----
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - saga-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: saga-state-machine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - saga-network
+
+  # ---- OpenTelemetry & Monitoring ----
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    container_name: otel-collector
+    volumes:
+      - ./opentelemetry/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+    depends_on:
+      - jaeger
+    networks:
+      - saga-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    container_name: jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # gRPC ingest from Collector
+    networks:
+      - saga-network
+
+  # ---- Application Services ----
+  order-api:
+    build:
+      context: .
+      dockerfile: SagaStateMachine.Order.API/Dockerfile
+    platform: linux/amd64
+    container_name: order-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=SagaStateMachineOrderDb;Username=postgres;Password=postgres
+      - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672/saga-state-machine
+    ports:
+      - "5001:8080"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - otel-collector
+    networks:
+      - saga-network
+
+  inventory-api:
+    build:
+      context: .
+      dockerfile: SagaStateMachine.Inventory.API/Dockerfile
+    platform: linux/amd64
+    container_name: inventory-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=SagaStateMachineInventoryDb;Username=postgres;Password=postgres
+      - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672/saga-state-machine
+    ports:
+      - "5002:8080"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - otel-collector
+    networks:
+      - saga-network
+
+  payment-api:
+    build:
+      context: .
+      dockerfile: SagaStateMachine.Payment.API/Dockerfile
+    platform: linux/amd64
+    container_name: payment-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=SagaStateMachinePaymentDb;Username=postgres;Password=postgres
+      - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672/saga-state-machine
+    ports:
+      - "5003:8080"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - otel-collector
+    networks:
+      - saga-network
+
+  notification-api:
+    build:
+      context: .
+      dockerfile: SagaStateMachine.Notification.API/Dockerfile
+    platform: linux/amd64
+    container_name: notification-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Postgres=Host=postgres;Port=5432;Database=SagaStateMachineNotificationDb;Username=postgres;Password=postgres
+      - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672/saga-state-machine
+    ports:
+      - "5004:8080"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - otel-collector
+    networks:
+      - saga-network
+
+volumes:
+  postgres_data:

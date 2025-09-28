@@ -1,5 +1,9 @@
 global using MassTransit;
-global using SagaStateMachine.Inventory.API.EventHandlers;
 global using Microsoft.EntityFrameworkCore;
 global using SagaStateMachine.Inventory.API.Infrastructure;
 global using SagaStateMachine.Inventory.API.Extensions;
+global using OpenTelemetry.Resources;
+global using OpenTelemetry.Trace;
+global using OpenTelemetry.Metrics;
+global using MassTransit.Logging;
+global using MassTransit.Monitoring;

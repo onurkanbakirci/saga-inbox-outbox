@@ -9,6 +9,8 @@ public static class SeedExtension
         using var scope = app.ApplicationServices.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<InventoryDatabaseContext>();
 
+        context.Database.Migrate();
+
         if (context.Inventories.Any())
         {
             return;
