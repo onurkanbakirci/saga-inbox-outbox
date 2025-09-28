@@ -16,6 +16,11 @@ public static class OpenTelemetryExtension
                 .AddSource(DiagnosticHeaders.DefaultListenerName) // MassTransit ActivitySource
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
+                .AddEntityFrameworkCoreInstrumentation(options =>
+                {
+                    options.SetDbStatementForText = true;
+                    options.SetDbStatementForStoredProcedure = true;
+                })
                 .AddOtlpExporter(options =>
                 {
                     options.Endpoint = new Uri(tracingEndpoint);
@@ -26,6 +31,7 @@ public static class OpenTelemetryExtension
                 .AddMeter(InstrumentationOptions.MeterName) // MassTransit Meter
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
+                .AddMeter("Npgsql") // PostgreSQL metrics
                 .AddOtlpExporter(options =>
                 {
                     options.Endpoint = new Uri(metricsEndpoint);
