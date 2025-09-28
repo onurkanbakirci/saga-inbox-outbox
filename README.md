@@ -1,14 +1,15 @@
 # Saga State Machine - Order Processing System
 
-A distributed order processing system implementing the **Saga Pattern** with **Outbox/Inbox Pattern** using **MassTransit** state machines. This system demonstrates how to handle complex business transactions across multiple microservices while maintaining data consistency, handling failures gracefully, and ensuring reliable message delivery.
+A distributed order processing system implementing the **Saga Pattern** with **Outbox/Inbox Pattern** using **MassTransit** state machines. This system demonstrates how to handle complex business transactions across multiple microservices while maintaining data consistency, handling failures gracefully, and ensuring reliable message delivery. The system includes comprehensive **observability** with **OpenTelemetry**, **Jaeger tracing**, and a **real-time monitoring dashboard**.
 
 ## 🏗️ System Architecture
 
 ```mermaid
 graph TB
     Client[Client Application] --> OrderAPI[Order API<br/>Port: 5001<br/>Saga Orchestrator]
+    Client --> MonitoringUI[Monitoring Dashboard<br/>Port: 3000<br/>Real-time Monitoring]
     
-    OrderAPI --> RabbitMQ[RabbitMQ Message Bus]
+    OrderAPI --> RabbitMQ[RabbitMQ Message Bus<br/>Port: 5672]
     PaymentAPI[Payment API<br/>Port: 5002] --> RabbitMQ
     InventoryAPI[Inventory API<br/>Port: 5003] --> RabbitMQ
     NotificationAPI[Notification API<br/>Port: 5004] --> RabbitMQ
@@ -18,6 +19,14 @@ graph TB
     InventoryAPI --> InventoryDB[(PostgreSQL<br/>Inventory Data + Outbox)]
     NotificationAPI --> NotificationDB[(PostgreSQL<br/>Notification Data + Outbox)]
     
+    %% OpenTelemetry Integration
+    OrderAPI --> OTelCollector[OpenTelemetry Collector<br/>Port: 4317/4318]
+    PaymentAPI --> OTelCollector
+    InventoryAPI --> OTelCollector
+    NotificationAPI --> OTelCollector
+    
+    OTelCollector --> Jaeger[Jaeger<br/>Port: 16686<br/>Distributed Tracing]
+    
     subgraph "Microservices with Outbox Pattern"
         OrderAPI
         PaymentAPI
@@ -25,12 +34,18 @@ graph TB
         NotificationAPI
     end
     
-    subgraph "Infrastructure"
+    subgraph "Infrastructure & Data"
         RabbitMQ
         PostgreSQL
         PaymentDB
         InventoryDB
         NotificationDB
+    end
+    
+    subgraph "Observability & Monitoring"
+        OTelCollector
+        Jaeger
+        MonitoringUI
     end
     
     style OrderAPI fill:#e1f5fe
@@ -39,6 +54,9 @@ graph TB
     style NotificationAPI fill:#fff8e1
     style RabbitMQ fill:#fff3e0
     style PostgreSQL fill:#fce4ec
+    style OTelCollector fill:#e8f5e8
+    style Jaeger fill:#fff8e1
+    style MonitoringUI fill:#f3e5f5
 ```
 
 ## 🔄 Saga State Machine Flow
@@ -269,19 +287,38 @@ All messages include:
 
 ## 🛠️ Technology Stack
 
+### Backend Services
 - **.NET 10**: Modern C# development
 - **MassTransit**: Message bus, saga orchestration, and outbox/inbox patterns
 - **RabbitMQ**: Message broker
 - **PostgreSQL**: Saga state persistence and outbox/inbox storage
 - **Entity Framework Core**: ORM for database operations
-- **Docker**: Containerization (optional)
+
+### Observability & Monitoring
+- **OpenTelemetry**: Distributed tracing and metrics collection
+- **Jaeger**: Distributed tracing visualization and analysis
+- **OpenTelemetry Collector**: Telemetry data collection and processing
+- **OTLP (OpenTelemetry Protocol)**: Standardized telemetry data transmission
+
+### Monitoring Dashboard
+- **Next.js 15**: React framework with App Router
+- **TypeScript**: Type-safe development
+- **Tailwind CSS**: Utility-first styling
+- **shadcn/ui**: Modern UI components
+- **Recharts**: Data visualization
+
+### Infrastructure
+- **Docker**: Containerization and orchestration
+- **Docker Compose**: Multi-container application management
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- .NET 10 SDK
-- PostgreSQL server
-- RabbitMQ server
+- **.NET 10 SDK**: For building and running the microservices
+- **Docker & Docker Compose**: For infrastructure services (recommended)
+- **Node.js 18+**: For the monitoring dashboard
+- **PostgreSQL server**: Database for saga state and outbox/inbox
+- **RabbitMQ server**: Message broker for service communication
 
 ### Setup Instructions
 
@@ -291,23 +328,39 @@ All messages include:
    cd saga-state-machine
    ```
 
-2. **Start infrastructure services**
+2. **Start infrastructure services with observability stack**
    ```bash
-   # Using Docker Compose (if available)
-   docker-compose up -d postgres rabbitmq
+   # Using Docker Compose (recommended)
+   docker-compose up -d postgres rabbitmq otel-collector jaeger
    
-   # Or start manually:
+   # This starts:
    # - PostgreSQL on localhost:5432
-   # - RabbitMQ on localhost:5672
+   # - RabbitMQ on localhost:5672 (Management UI: localhost:15672)
+   # - OpenTelemetry Collector on localhost:4317/4318
+   # - Jaeger UI on localhost:16686
    ```
 
-3. **Update connection strings**
-   Update `appsettings.json` in each API project:
+3. **Configuration is ready**
+   The services are pre-configured with the following settings in `appsettings.json`:
    ```json
    {
      "ConnectionStrings": {
-       "Postgres": "Host=localhost;Database=SagaStateMachine;Username=postgres;Password=password",
-       "RabbitMQ": "amqp://guest:guest@localhost:5672/"
+       "Postgres": "Host=localhost;Database=SagaStateMachine[ServiceName]Db;Username=postgres;Password=postgres",
+       "RabbitMQ": "amqp://guest:guest@localhost:5672/saga-state-machine"
+     },
+     "OpenTelemetry": {
+       "ServiceName": "SagaStateMachine.[ServiceName].API",
+       "ServiceVersion": "1.0.0",
+       "Tracing": {
+         "OtlpExporter": {
+           "Endpoint": "http://localhost:4317"
+         }
+       },
+       "Metrics": {
+         "OtlpExporter": {
+           "Endpoint": "http://localhost:4317"
+         }
+       }
      }
    }
    ```
@@ -350,6 +403,31 @@ All messages include:
    dotnet run
    ```
 
+6. **Start the monitoring dashboard**
+   ```bash
+   # Terminal 5: Monitoring Dashboard
+   cd monitoring
+   npm install
+   npm run dev
+   
+   # Dashboard available at: http://localhost:3000
+   ```
+
+### Alternative: Docker Compose (All Services)
+   ```bash
+   # Start everything with Docker Compose
+   docker-compose up --build
+   
+   # Services will be available at:
+   # - Order API: http://localhost:5001
+   # - Inventory API: http://localhost:5002  
+   # - Payment API: http://localhost:5003
+   # - Notification API: http://localhost:5004
+   # - Monitoring Dashboard: http://localhost:3000
+   # - Jaeger UI: http://localhost:16686
+   # - RabbitMQ Management: http://localhost:15672
+   ```
+
 ### Testing the System
 
 1. **Create an order**
@@ -363,15 +441,37 @@ All messages include:
      }'
    ```
 
-2. **Monitor logs**
-   - Watch the console output of all four services
-   - Observe the saga state transitions
-   - See the message flow between services
+2. **Monitor the system**
+   
+   **Real-time Dashboard** (http://localhost:3000):
+   - View live metrics and KPIs
+   - Track saga state transitions
+   - Monitor message flow and outbox status
+   - Check service health and alerts
+   
+   **Jaeger Tracing** (http://localhost:16686):
+   - Search for traces by service or operation
+   - View end-to-end saga execution flow
+   - Analyze performance bottlenecks
+   - Investigate failed operations
+   
+   **Service Logs**:
+   - Watch console output of all services
+   - Observe structured logging with correlation IDs
    - Notice outbox pattern ensuring reliable delivery
 
-3. **Check database tables**
+3. **Explore observability features**
+   
+   **Distributed Tracing**:
+   - Each order creates a distributed trace
+   - Trace spans show message flow between services
+   - Performance metrics for each operation
+   - Error propagation and failure analysis
+   
+   **Database Monitoring**:
    - Verify saga state persistence in Order API database
    - Check outbox/inbox tables for message tracking
+   - Monitor database performance metrics
    - Observe notification records in Notification API database
 
 ## 🔍 Key Features
@@ -395,12 +495,15 @@ All messages include:
 - **Message Recovery**: Outbox ensures no messages are lost during failures
 - **Idempotency**: Handles duplicate messages gracefully
 
-### Monitoring & Observability
+### Observability & Monitoring
+- **Distributed Tracing**: End-to-end request tracing with OpenTelemetry and Jaeger
+- **Metrics Collection**: Performance metrics and KPIs via OpenTelemetry
 - **Structured Logging**: Comprehensive logging throughout the flow
 - **State Tracking**: Database persistence of saga states
 - **Message Tracing**: Correlation IDs for end-to-end tracing
 - **Outbox Monitoring**: Track message publishing status
 - **Inbox Monitoring**: Track message processing status
+- **Real-time Dashboard**: Live monitoring with Next.js dashboard
 
 ## 🏗️ Project Structure
 
@@ -426,8 +529,197 @@ saga-state-machine/
 │   ├── EventHandlers/                   # Message handlers with outbox
 │   ├── Infrastructure/Migrations/       # Database migrations (outbox)
 │   └── Infrastructure/Models/           # Notification domain models
+├── monitoring/                          # Real-time monitoring dashboard
+│   ├── src/app/                        # Next.js pages and components
+│   ├── src/components/                 # UI components and charts
+│   ├── src/types/                      # TypeScript type definitions
+│   └── package.json                    # Dashboard dependencies
+├── opentelemetry/                      # OpenTelemetry configuration
+│   └── otel-collector-config.yaml     # Collector configuration
+├── docker-compose.yml                  # Complete infrastructure setup
 └── SagaStateMachine.sln                # Solution file
 ```
+
+## 🔍 Observability & Distributed Tracing
+
+### OpenTelemetry Integration
+
+The system implements comprehensive observability using **OpenTelemetry** for distributed tracing and metrics collection:
+
+#### Tracing Configuration
+```csharp
+// OpenTelemetry setup in each service
+services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService(serviceName, serviceVersion: serviceVersion))
+    .WithTracing(b => b
+        .AddSource(DiagnosticHeaders.DefaultListenerName) // MassTransit ActivitySource
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri("http://otel-collector:4317");
+            options.Protocol = OtlpExportProtocol.Grpc;
+        })
+    )
+    .WithMetrics(b => b
+        .AddMeter(InstrumentationOptions.MeterName) // MassTransit Meter
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter()
+    );
+```
+
+#### Automatic Instrumentation
+- **ASP.NET Core**: HTTP request/response tracing
+- **MassTransit**: Message publishing and consumption tracing
+- **HTTP Client**: Outbound HTTP call tracing
+- **Entity Framework**: Database operation tracing (optional)
+
+### Jaeger Distributed Tracing
+
+**Jaeger** provides visualization and analysis of distributed traces:
+
+#### Key Features
+- **End-to-End Tracing**: Complete saga execution flow visualization
+- **Service Dependencies**: Automatic service dependency mapping
+- **Performance Analysis**: Latency breakdown and bottleneck identification
+- **Error Tracking**: Failed operations and error propagation
+- **Correlation**: Link related operations across services
+
+#### Trace Correlation
+Each saga execution creates a distributed trace showing:
+1. **Order Submission** → Order API
+2. **Payment Processing** → Payment API
+3. **Inventory Reservation** → Inventory API
+4. **Order Confirmation** → Notification API
+5. **Message Flow** → RabbitMQ operations
+
+### OpenTelemetry Collector
+
+The **OpenTelemetry Collector** acts as a centralized telemetry processing hub:
+
+```yaml
+# otel-collector-config.yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  otlp/jaeger:
+    endpoint: http://jaeger:4317
+    tls:
+      insecure: true
+
+processors:
+  batch:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+```
+
+#### Benefits
+- **Vendor Agnostic**: Standardized telemetry data collection
+- **Scalable**: Handles high-volume telemetry data
+- **Flexible**: Easy to add new exporters (Prometheus, Grafana, etc.)
+- **Reliable**: Built-in retry and batching mechanisms
+
+### Metrics & KPIs
+
+The system collects comprehensive metrics:
+
+#### Business Metrics
+- **Saga Success Rate**: Percentage of successfully completed orders
+- **Processing Time**: End-to-end saga execution duration
+- **Failure Reasons**: Categorized failure analysis
+- **Throughput**: Orders processed per minute/hour
+
+#### Technical Metrics
+- **Message Latency**: Time from publish to consumption
+- **Outbox Processing**: Message publishing delays
+- **Database Performance**: Query execution times
+- **Service Health**: Response times and error rates
+
+#### MassTransit Metrics
+- **Message Count**: Published/consumed message counts
+- **Consumer Performance**: Message processing times
+- **Retry Attempts**: Failed message retry statistics
+- **Queue Depth**: Message backlog monitoring
+
+## 📊 Real-time Monitoring Dashboard
+
+### Next.js Monitoring Application
+
+A comprehensive **real-time monitoring dashboard** built with **Next.js 15**:
+
+#### Dashboard Features
+- **📈 Live Metrics**: Real-time KPIs and performance indicators
+- **🔄 Saga Monitoring**: Track saga states and transitions
+- **📨 Message Flow**: Monitor message delivery and processing
+- **📤 Outbox Status**: Track outbox pattern performance
+- **🏥 Health Checks**: Service and infrastructure health
+- **🚨 Alert Management**: Real-time alerts and notifications
+- **📊 Analytics**: Historical trends and insights
+
+#### Key Pages
+1. **Dashboard** (`/`) - Overview with key metrics and alerts
+2. **Sagas** (`/sagas`) - Saga state monitoring and exploration
+3. **Messages** (`/messages`) - Message flow and status tracking
+4. **Outbox** (`/outbox`) - Outbox pattern monitoring
+5. **Analytics** (`/analytics`) - Advanced analytics and insights
+6. **Health** (`/health`) - System health monitoring
+
+#### Technology Stack
+- **Next.js 15**: React framework with App Router
+- **TypeScript**: Type-safe development
+- **Tailwind CSS**: Utility-first styling
+- **shadcn/ui**: Modern UI components
+- **Recharts**: Data visualization
+- **Real-time Updates**: Live data refresh every 5 seconds
+
+### Monitoring Capabilities
+
+#### Saga State Tracking
+- **Visual State Flow**: Interactive saga state diagrams
+- **State Duration**: Time spent in each state
+- **Transition History**: Complete state change timeline
+- **Failure Analysis**: Identify stuck or failed sagas
+- **Correlation Tracking**: Link sagas to related messages
+
+#### Message Monitoring
+- **Delivery Status**: Track message publishing success
+- **Processing Times**: End-to-end message latency
+- **Retry Patterns**: Monitor retry attempts and failures
+- **Throughput Metrics**: Messages per second/minute
+- **Error Analysis**: Categorized failure reasons
+
+#### Outbox Pattern Monitoring
+- **Queue Depth**: Monitor outbox message backlog
+- **Publishing Rate**: Track outbox processing speed
+- **Atomicity Verification**: Ensure transactional consistency
+- **Failure Detection**: Identify publishing failures
+- **Performance Trends**: Historical outbox performance
+
+#### Alert System
+- **Real-time Alerts**: Immediate notification of issues
+- **Severity Levels**: Critical, High, Medium, Low
+- **Alert Categories**:
+  - High error rates
+  - Saga timeouts
+  - Message backlogs
+  - Service failures
+- **Acknowledgment**: Mark alerts as resolved
 
 ## 🔧 Advanced Configuration
 
@@ -474,4 +766,29 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-*This project demonstrates advanced distributed system patterns including Saga Pattern and Outbox/Inbox Pattern using modern .NET technologies. It serves as a reference implementation for building resilient, scalable microservices architectures with guaranteed message delivery and data consistency.*
+*This project demonstrates advanced distributed system patterns including Saga Pattern, Outbox/Inbox Pattern, and comprehensive observability using modern .NET technologies. It serves as a reference implementation for building resilient, scalable microservices architectures with guaranteed message delivery, data consistency, and full distributed tracing capabilities.*
+
+## 🌟 Key Highlights
+
+### 🔄 **Distributed Transaction Management**
+- **Saga Pattern**: Orchestrated business transactions across microservices
+- **Outbox/Inbox Pattern**: Guaranteed message delivery and idempotency
+- **Compensating Actions**: Automatic rollback for failed transactions
+
+### 📊 **Comprehensive Observability**
+- **OpenTelemetry Integration**: Standardized telemetry collection
+- **Jaeger Distributed Tracing**: End-to-end request flow visualization
+- **Real-time Monitoring**: Live dashboard with metrics and alerts
+- **Performance Analytics**: Historical trends and insights
+
+### 🏗️ **Production-Ready Architecture**
+- **Microservices**: Loosely coupled, independently deployable services
+- **Event-Driven**: Asynchronous communication with reliable messaging
+- **Containerized**: Docker support for easy deployment
+- **Scalable**: Horizontal scaling capabilities with load balancing
+
+### 🔍 **Developer Experience**
+- **Type Safety**: Full TypeScript support in monitoring dashboard
+- **Modern UI**: Beautiful, responsive monitoring interface
+- **Comprehensive Logging**: Structured logs with correlation tracking
+- **Easy Setup**: One-command Docker Compose deployment
