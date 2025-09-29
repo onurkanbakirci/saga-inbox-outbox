@@ -5,7 +5,7 @@ namespace SagaStateMachine.Order.API.Features.Commands;
 
 public class CreateOrderCommand : IRequest<Guid>
 {
-    public CreateOrderDto Request { get; set; }
+    public required CreateOrderDto Request { get; set; }
 
     public class CreateOrderCommandHandler(IPublishEndpoint publishEndpoint, OrderDatabaseContext dbContext) : IRequestHandler<CreateOrderCommand, Guid>
     {
