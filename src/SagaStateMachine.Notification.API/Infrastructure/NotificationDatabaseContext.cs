@@ -7,6 +7,7 @@ using SagaStateMachine.Notification.API.Infrastructure.Models;
 public class NotificationDatabaseContext(DbContextOptions<NotificationDatabaseContext> options) : DbContext(options)
 {
     public DbSet<Notification> Notifications { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

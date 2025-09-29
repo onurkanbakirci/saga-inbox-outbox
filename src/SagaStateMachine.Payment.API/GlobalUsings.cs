@@ -8,3 +8,4 @@ global using OpenTelemetry.Logs;
 global using MassTransit.Logging;
 global using MassTransit.Monitoring;
 global using SagaStateMachine.Payment.API.Extensions;
+global using MediatR;

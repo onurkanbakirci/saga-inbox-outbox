@@ -8,3 +8,4 @@ global using OpenTelemetry.Metrics;
 global using OpenTelemetry.Logs;
 global using MassTransit.Logging;
 global using MassTransit.Monitoring;
+global using MediatR;

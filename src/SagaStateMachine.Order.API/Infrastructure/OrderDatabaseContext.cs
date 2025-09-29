@@ -1,15 +1,23 @@
-using MassTransit;
+using System.Data;
+using Microsoft.EntityFrameworkCore.Storage;
+using SagaStateMachine.Order.API.Infrastructure.Configurations;
 using MassTransit.EntityFrameworkCoreIntegration;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace SagaStateMachine.Order.API.Infrastructure;
 
-using SagaStateMachine.Order.API.Infrastructure.Configurations;
 using SagaStateMachine.Order.API.Infrastructure.Models;
 
-public class OrderDatabaseContext(DbContextOptions options) : SagaDbContext(options)
+public class OrderDatabaseContext(DbContextOptions options) : SagaDbContext(options), IApplicationDbContext
 {
     public DbSet<Order> Orders { get; set; }
+
+    private IDbContextTransaction _currentTransaction;
+
+    public DbContext Instance => this;
+
+    public bool HasActiveTransaction => _currentTransaction != null;
+
     protected override IEnumerable<ISagaClassMap> Configurations
     {
         get
@@ -17,6 +25,7 @@ public class OrderDatabaseContext(DbContextOptions options) : SagaDbContext(opti
             yield return new OrderStateMapper();
         }
     }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +37,71 @@ public class OrderDatabaseContext(DbContextOptions options) : SagaDbContext(opti
         modelBuilder.AddOutboxStateEntity();
 
         modelBuilder.ApplyConfiguration(new OrderConfigurations());
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
+    {
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    public IDbContextTransaction GetCurrentTransaction() => _currentTransaction;
+
+    public async Task<IDbContextTransaction> BeginTransactionAsync()
+    {
+        if (_currentTransaction != null)
+        {
+            return null;
+        }
+
+        _currentTransaction = await Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+
+        return _currentTransaction;
+    }
+
+    public async Task CommitTransactionAsync(IDbContextTransaction transaction)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+
+        if (transaction != _currentTransaction)
+        {
+            throw new InvalidOperationException($"Transaction {transaction.TransactionId} is not current");
+        }
+
+        try
+        {
+            await SaveChangesAsync();
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            RollbackTransaction();
+            throw;
+        }
+        finally
+        {
+            if (HasActiveTransaction)
+            {
+                _currentTransaction.Dispose();
+                _currentTransaction = null;
+            }
+        }
+    }
+
+    public void RollbackTransaction()
+    {
+        try
+        {
+            _currentTransaction?.Rollback();
+        }
+        finally
+        {
+            if (HasActiveTransaction)
+            {
+                _currentTransaction.Dispose();
+                _currentTransaction = null;
+            }
+        }
     }
 }
 

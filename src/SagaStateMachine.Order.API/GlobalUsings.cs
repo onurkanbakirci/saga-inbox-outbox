@@ -9,3 +9,4 @@ global using OpenTelemetry.Logs;
 global using MassTransit.Logging;
 global using MassTransit.Monitoring;
 global using SagaStateMachine.Order.API.Extensions;
+global using MediatR;

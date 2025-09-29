@@ -12,6 +12,10 @@ builder.Services.AddDatabase(builder.Configuration);
 
 builder.Services.AddMasstransit(builder.Configuration);
 
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(typeof(Program).Assembly));
+
+builder.Services.AddBehaviors();
+
 var app = builder.Build();
 
 app.Seed();
